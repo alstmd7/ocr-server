@@ -13,3 +13,13 @@ $.ajax({
     $('#created_at').val(board.created_at);
     $('#modified_at').val(board.modified_at);
 });
+
+function tesseract(){
+    $.ajax({
+        "url": `/api/v1/boards/board/${board_number}`,
+        "method": "GET",
+        "data": $('#loaded_file').attr('src').val()
+    }).done(function (data) {
+        fileUrl = $('#loaded_file').attr('src', board.loaded_file);
+    })
+}

@@ -5,11 +5,20 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from django.shortcuts import render
 from django.http.response import HttpResponse
+from django.conf import settings
+from pyuploadcare import Uploadcare, File
 from .models import Board
 from .serializers import BoardSerializer
 
-from pyuploadcare import Uploadcare, File
-from django.conf import settings
+from PIL import Image
+from pytesseract import *
+import re
+import cv2
+
+def tesseract(request) :
+    img = Image.open(request)
+    text = pytesseract.image_to_string(img='eng')
+    return text
 
 def say_hello(request) :
     return render(request, "index.html", {
@@ -38,11 +47,11 @@ class Boards(APIView) :
             board = serializer.save() # create() 메소드를 호출하게 됨 
 
             if board.loaded_file and board.loaded_file.size < settings.FILE_SIZE_LIMIT :
-                uploadcare = Uploadcare(public_key=settings.UC_PUBLIC_KEY , secret_key=settings.UC_SECRET_KEY)
+                uploadcare = Uploadcare(public_key=settings.UC_PUBLIC_KEY, secret_key=settings.UC_SECRET_KEY)
                 with open(board.loaded_file.path, 'rb') as file_object:
                     ucare_file = uploadcare.upload(file_object)
                     image_url = f"https://ucarecdn.com/{ucare_file.uuid}/"
-                    board.image_url
+                    board.image_url = image_url
 
             board.author = request.user
             board.save()
@@ -71,7 +80,7 @@ class BoardDetail(APIView) :
     def put(self, request, pk) :
         board = self.get_object(pk)
 
-        if not board.author == request.user :
+        if not board.author == request.user : 
             raise PermissionDenied
 
         serializer = BoardSerializer(instance=board, data=request.data, partial=True)
